@@ -53,17 +53,12 @@ print(f'✅ Test prediction: {\"Will Stay\" if pred == 0 else \"Will Churn\"}')
       uses: docker/setup-buildx-action@v2
     
     - name: Build Docker image
-      uses: docker/build-push-action@v4
-      with:
-        context: .
-        push: false
-        tags: ghcr.io/Dharmi1503/mlops-pipeline:latest
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+      run: |
+        docker build -t mlops-pipeline:latest .
     
     - name: Test Docker image
       run: |
-        docker run --rm ghcr.io/Dharmi1503/mlops-pipeline:latest python -c "
+        docker run --rm mlops-pipeline:latest python -c "
 import joblib
 print('✅ Docker image built successfully!')
 model = joblib.load('models/churn_model.pkl')
