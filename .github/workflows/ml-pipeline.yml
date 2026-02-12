@@ -27,3 +27,45 @@ jobs:
     - name: Run tests
       run: |
         python -m pytest tests/test_model.py -v
+    
+    - name: Test model prediction
+      run: |
+        python -c "
+import joblib
+import pandas as pd
+model = joblib.load('models/churn_model.pkl')
+columns = joblib.load('models/model_columns.pkl')
+sample = pd.DataFrame([[12, 85.5, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0]], columns=columns)
+pred = model.predict(sample)[0]
+print(f'✅ Test prediction: {\"Will Stay\" if pred == 0 else \"Will Churn\"}')
+        "
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Build Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: false
+        tags: ghcr.io/Dharmi1503/mlops-pipeline:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+    
+    - name: Test Docker image
+      run: |
+        docker run --rm ghcr.io/Dharmi1503/mlops-pipeline:latest python -c "
+import joblib
+print('✅ Docker image built successfully!')
+model = joblib.load('models/churn_model.pkl')
+print('✅ Model loaded in container!')
+        "
